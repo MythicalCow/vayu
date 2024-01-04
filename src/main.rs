@@ -117,9 +117,14 @@ fn list_tasks(tasks: &mut Vec<Task>) {
             while id.len() < 4 {
                 id.push(' ');
             }
-            if i % 2 == 0 {
+            //if due date is today use red text
+            if task.due == Local::now().format("%Y-%m-%d").to_string() {
+                println!("{}| {} | {}", id.on_red(), task.due.on_red(), task.description.on_red());
+            }
+            else if i % 2 == 0 {
                 println!("{}| {} | {}", id.on_black(), task.due.on_black(), task.description.on_black());
-            } else {
+            } 
+            else {
                 println!("{}| {} | {}", id, task.due, task.description);
             }
             i += 1;
