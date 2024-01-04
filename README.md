@@ -1,4 +1,4 @@
-#[target\release\examples\demo.png]
+#[demo](target\release\examples\demo.png)
 
 # What is Vayu
 Vayu is a command-line interface like taskwarrior meant for task management. The end goal for the tool is to have a multipurpose study tool with note storage, task management, and pomodoro study timers/music.
