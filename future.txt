@@ -1,0 +1,9 @@
+short term goals
+- add music to pomodoro system
+- agenda and event system
+
+medium term goals
+- better ui
+
+long term goals
+- natural language processing for task scheduling
