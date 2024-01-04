@@ -1,3 +1,4 @@
+![banner](banner.png)
 [![Crate](https://img.shields.io/crates/v/vayu.svg)](https://crates.io/crates/vayu)
 
 # Description
@@ -27,4 +28,5 @@ where id is the listed id of the task viewable through `vayu list`
 ### to use the pomodoro timer:
 `vayu pomo iterations work_session_time break_session_time`
 # Contributions
-vayu wouldn't be possible without several great rust crates. For a full list of dependencies please checkout the `Cargo.toml` file.
+vayu wouldn't be possible without several great rust crates. For a full list of dependencies please checkout the `Cargo.toml` file. 
+icon: from flaticon.com
