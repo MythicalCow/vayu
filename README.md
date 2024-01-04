@@ -1,10 +1,10 @@
+
+
+# Description
+Vayu is a command-line interface like taskwarrior meant for task management. The end goal for the tool is to have a multipurpose study tool with task and note storage, task management, and pomodoro study timers/music. As a computer engineering student at UIUC, having an organized task management system is critical. I hope to bring that to others with vayu.
+# Demo Images
 ![demo](demo.png)
 ![demo2](demo2.png)
-
-# What is Vayu
-Vayu is a command-line interface like taskwarrior meant for task management. The end goal for the tool is to have a multipurpose study tool with task and note storage, task management, and pomodoro study timers/music.
-
-As a computer engineering student at UIUC, having an organized task management system is critical. I hope to bring that to others with vayu.
 # Installation
 The best way to install vayu is via cargo which comes with an installation of rust. For installation of rust navigate to https://www.rust-lang.org/tools/install.
 
