@@ -1,4 +1,4 @@
-<img src="vayu.png" alt="banner" width="600"/><>
+<img src="vayu.png" alt="banner" width="1000"/><>
 
 # Description
 Vayu is a command-line interface like taskwarrior meant for task management. The end goal for the tool is to have a multipurpose study tool with task and note storage, task management, and pomodoro study timers/music. As a computer engineering student at UIUC, having an organized task management system is critical. I hope to bring that to others with vayu.
