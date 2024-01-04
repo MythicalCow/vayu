@@ -1,9 +1,13 @@
 [package]
 name = "vayu"
 version = "0.1.0"
-edition = "2021"
 authors = ["Raghav Tirumale raghav.tirumale@gmail.com"]
 license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/MythicalCow/vayu"
+repository = "https://github.com/MythicalCow/vayu"
+keywords = ["cli", "task management", "studying"]
+categories = ["command-line-utilities"]
 
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

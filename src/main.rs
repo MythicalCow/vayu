@@ -1,3 +1,7 @@
+extern crate clap;
+extern crate colored;
+extern crate chrono;
+extern crate indicatif;
 use clap::Parser;
 use std::fs::File;
 use std::io::{self, BufRead};
