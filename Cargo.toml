@@ -8,6 +8,7 @@ homepage = "https://github.com/MythicalCow/vayu"
 repository = "https://github.com/MythicalCow/vayu"
 keywords = ["cli", "task management", "studying"]
 categories = ["command-line-utilities"]
+description = "a minimimalist CLI task-management tool that includes task scheduling and a pomodoro timers"
 
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
