@@ -6,7 +6,7 @@ license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/MythicalCow/vayu"
 repository = "https://github.com/MythicalCow/vayu"
-keywords = ["cli", "task management", "studying"]
+keywords = ["cli"]
 categories = ["command-line-utilities"]
 description = "a minimimalist CLI task-management tool that includes task scheduling and a pomodoro timers"
 
