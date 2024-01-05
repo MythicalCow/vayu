@@ -65,7 +65,10 @@
        width="244.54736"
        height="71.905258"
        x="317.94263"
-       y="39.940178" /><text
+       y="39.940178"
+       inkscape:export-filename="banner.png"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96" /><text
        xml:space="preserve"
        style="font-size:26.4583px;font-family:'FiraCode NF';-inkscape-font-specification:'FiraCode NF, Normal';fill:#ffffff;fill-opacity:1;stroke-width:0.264999"
        x="391.47379"
