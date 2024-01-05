@@ -27,5 +27,16 @@ note that YYYY-MM-DD can also be replaced with today, tomorrow, and days of the 
 where id is the listed id of the task viewable through `vayu list`
 ### to use the pomodoro timer:
 `vayu pomo iterations work_session_time break_session_time`
+### event planning / agenda (beta feature)
+`vayu elist`
+lists events scheduled for the day
+`vayu eadd "description" start_time end_time repeat`
+adds a new event that potentially repeats. `start_time` and `end_time` are provided in the format HH:MMam or HH:MMpm. repeat is an optional arg which if left empty is set to only schedule an event for that day. otherwise repeat is provided as days of the week selected from `{monday,wednesday,tuesday,...}` separated by commas.
+Ex: `vayu eadd "yoga" 4:30am 5:30am tuesday,thursday`
+`vayu eids`
+lists unique event ids for each event
+`vayu erem`
+remove event using unique event id.
+Ex: `vayu erem 1``
 # Contributions
 vayu wouldn't be possible without several great rust crates. For a full list of dependencies please checkout the `Cargo.toml` file. 
