@@ -2,11 +2,19 @@ extern crate clap;
 extern crate colored;
 extern crate chrono;
 extern crate indicatif;
+
+//tui
+use std::io::{self, stdout, BufRead};
+use crossterm::{
+    event::{self, Event as UIEvent, KeyCode},
+    ExecutableCommand,
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}
+};
+use ratatui::{prelude::*, widgets::*};
+
 use clap::Parser;
 use std::fs::File;
-use std::io::{self, BufRead};
 use std::path::Path;
-use colored::Colorize;
 use chrono::{Local,Duration};
 use std::io::prelude::*;
 use chrono::Datelike;
@@ -18,6 +26,7 @@ use indicatif::ProgressBar;
 #[derive(Parser)]
 struct Command {
     /// {add,list,done,pomo} add: add a new task, list: list all tasks, done: mark a task as done, pomo: pomodoro timer ex: vayu pomo 3 50 10 (3 sessions of 50 minute work and 10 minute break)
+    #[clap(default_value = "")]
     command: String,
     /// {add} task description and due date (YYYY-MM-DD or today,yesterday,monday,etc.) separated by a colon. Ex: "vayu add yoga due:today" {done} task id. Ex: "vayu done 1"
     #[clap(default_value = "")]
@@ -33,6 +42,7 @@ struct Command {
 
 //struct for a task. there are some weird warnings about this being unused
 #[allow(dead_code)]
+#[derive(Clone)]
 struct Task {
     description: String,
     due: String,
@@ -41,6 +51,7 @@ struct Task {
 }
 
 #[allow(dead_code)]
+#[derive(Clone)]
 struct Event {
     description: String,
     start: String,
@@ -122,7 +133,10 @@ fn main() {
 
     //TASK LIST PARSING FROM CLI
     let command : Command = Command::parse();
-    if command.command == "add" {
+    if command.command == "" {
+        let _ = vayu_ui(&mut tasks, &mut events);
+    }
+    else if command.command == "add" {
         add_task(&mut tasks, next_id, command.arg1);
         list_tasks(&mut tasks);
     } 
@@ -184,10 +198,10 @@ fn list_tasks(tasks: &mut Vec<Task>) {
             }
             //if due date is today use red text
             if task.due == Local::now().format("%Y-%m-%d").to_string() {
-                println!("{}| {} | {}", id.on_red(), task.due.on_red(), task.description.on_red());
+                println!("{}| {} | {}", id, task.due, task.description);
             }
             else if i % 2 == 0 {
-                println!("{}| {} | {}", id.on_black(), task.due.on_black(), task.description.on_black());
+                println!("{}| {} | {}", id, task.due, task.description);
             } 
             else {
                 println!("{}| {} | {}", id, task.due, task.description);
@@ -263,7 +277,7 @@ fn add_task(tasks: &mut Vec<Task>, next_id: i32, arg1: String) {
         id: next_id,
     };
     tasks.push(task);
-    println!("task added with id {}", next_id.to_string().green())
+    println!("task added with id {}", next_id)
 }
 
 fn remove_task(tasks: &mut Vec<Task>, arg1: String) {
@@ -274,12 +288,12 @@ fn remove_task(tasks: &mut Vec<Task>, arg1: String) {
     for task in &mut tasks.iter() {
         if task.id == task_id {
             tasks.swap_remove(index);
-            println!("task {} done", task_id.to_string().green());
+            println!("task {} done", task_id);
             return;
         }
         index += 1;
     }
-    println!("task with id {} not found", task_id.to_string().red());
+    println!("task with id {} not found", task_id);
 }
 
 fn pomodoro(arg1: String, arg2: String, arg3: String){
@@ -308,7 +322,7 @@ fn pomodoro(arg1: String, arg2: String, arg3: String){
             if j % increment as i32 == 0 {
                 pb.inc(1);
             }
-            pb.set_message(format!("{} minutes {} seconds remaining... work session {} of {}", remaining.num_minutes(), remaining.num_seconds() % 60, (i+1).to_string().green(), iterations.to_string().green()));
+            pb.set_message(format!("{} minutes {} seconds remaining... work session {} of {}", remaining.num_minutes(), remaining.num_seconds() % 60, (i+1), iterations));
             std::thread::sleep(std::time::Duration::from_secs(1));
             
         }
@@ -331,7 +345,7 @@ fn pomodoro(arg1: String, arg2: String, arg3: String){
             if j % increment as i32 == 0 {
                 pb.inc(1);
             }
-            pb.set_message(format!("{} minutes {} seconds remaining... break session {} of {}", remaining.num_minutes(), remaining.num_seconds() % 60, (i+1).to_string().green(), iterations.to_string().green()));
+            pb.set_message(format!("{} minutes {} seconds remaining... break session {} of {}", remaining.num_minutes(), remaining.num_seconds() % 60, (i+1), iterations));
             std::thread::sleep(std::time::Duration::from_secs(1));
         }
         pb.set_message("break session complete".to_string());
@@ -378,12 +392,22 @@ fn add_event(events: &mut Vec<Event>, arg1: String, arg2: String, arg3: String, 
         println!("invalid end time format. use H:MMam or H:MMpm");
         return;
     }
-    let vecrepeat : Vec<&str> = repeat.split(",").collect();
+    let repeatclone = repeat.clone();
+    let vecrepeat : Vec<&str> = repeatclone.split(",").collect();
     //make sure all vect elements are days of the week
+    if repeat == "everyday" {
+        repeat = "monday,tuesday,wednesday,thursday,friday,saturday,sunday".to_string();
+    }
+    if repeat == "weekday" {
+        repeat = "monday,tuesday,wednesday,thursday,friday".to_string();
+    }
+    if repeat == "weekend" {
+        repeat = "saturday,sunday".to_string();
+    }
     if repeat != "" {
         for day in vecrepeat {
-            if day != "sunday" && day != "monday" && day != "tuesday" && day != "wednesday" && day != "thursday" && day != "friday" && day != "saturday" {
-                println!("invalid repeat format. use subset of [monday,tuesday,wednesday,thursday,friday,saturday,sunday] separated by commas");
+            if day != "sunday" && day != "monday" && day != "tuesday" && day != "wednesday" && day != "thursday" && day != "friday" && day != "saturday" && (repeat.matches("-").count() != 2) && day != "everyday" && day != "weekday" && day != "weekend" {
+                println!("invalid repeat format. use subset of [monday,tuesday,wednesday,thursday,friday,saturday,sunday] separated by commas, YYYY-MM-DD, or one of [everyday,weekday,weekend]");
                 return;
             }
         }
@@ -401,7 +425,7 @@ fn add_event(events: &mut Vec<Event>, arg1: String, arg2: String, arg3: String, 
         id: next_id,
     };
     events.push(event);
-    println!("event added with id {}", next_id.to_string().green());
+    println!("event added with id {}", next_id);
 }
 
 fn daily_agenda(events: &mut Vec<Event>) {
@@ -502,10 +526,197 @@ fn remove_event(events: &mut Vec<Event>, arg1: String) {
     for event in &mut events.iter() {
         if event.id == event_id {
             events.swap_remove(index);
-            println!("event {} done", event_id.to_string().green());
+            println!("event {} done", event_id);
             return;
         }
         index += 1;
     }
-    println!("event with id {} not found", event_id.to_string().red());
+    println!("event with id {} not found", event_id);
+}
+
+fn vayu_ui(tasks: &mut Vec<Task>, events: &mut Vec<Event>) -> io::Result<()> {
+    //ratatui ui with task list, calendar, and quote of the day
+    //layout
+    //                      *vayu*                              
+    //                  quote of the day                        
+    //      task list                          weekly calendar
+    let task_clone : &mut Vec<Task> = tasks;
+    let event_clone : &mut Vec<Event> = events;
+    //enable_raw_mode()?;
+    stdout().execute(EnterAlternateScreen)?;
+    let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
+
+    let mut should_quit = false;
+    while !should_quit {
+        terminal.draw(|f| ui(f, task_clone, event_clone))?;
+        should_quit = handle_events()?;
+    }
+
+    disable_raw_mode()?;
+    stdout().execute(LeaveAlternateScreen)?;
+    Ok(())
+}
+
+fn handle_events() -> io::Result<bool> {
+    if event::poll(std::time::Duration::from_millis(50))? {
+        if let UIEvent::Key(key) = event::read()? {
+            if key.kind == event::KeyEventKind::Press && key.code == KeyCode::Char('q') {
+                return Ok(true);
+            }
+       }
+    }
+    Ok(false)
+}
+
+fn ui(frame: &mut Frame, tasks: &mut Vec<Task>, events: &mut Vec<Event>) {
+    //main window
+    let main_layout = Layout::new(
+        Direction::Vertical,
+        [
+            Constraint::Length(2),
+            Constraint::Min(0),
+            Constraint::Percentage(40),
+        ]
+    ).split(frame.size());
+
+    let agenda_layout = Layout::new(
+        Direction::Horizontal,
+        [
+            Constraint::Percentage(14),
+            Constraint::Percentage(14),
+            Constraint::Percentage(14),
+            Constraint::Percentage(14),
+            Constraint::Percentage(14),
+            Constraint::Percentage(14),
+            Constraint::Percentage(14),
+            Constraint::Percentage(2),
+        ]
+    ).split(main_layout[2]);
+
+    //one box for each day of the week starting with today as the second box
+    //get the current date
+    let now = Local::now();
+    let today_date = now.format("%Y-%m-%d").to_string();
+    //render a box with each date and day of the week starting at yesterday
+    let mut day = now - Duration::days(1);
+    for i in 0..7 {
+        let day_date = day.format("%Y-%m-%d").to_string();
+        let day_day = day.format("%A").to_string();
+        let day_day = day_day.to_lowercase();
+        //make a string with date + day
+        let mut day_str = day_date.clone();
+        day_str.push_str(" ");
+        day_str.push_str(&day_day);
+        let mut day_box = Block::default().title(day_str.clone());
+        //rendering the calendar
+        let mut todays_events : Vec<Event> = Vec::new();
+        for event in &mut *events {
+            if event.repeat == day_date || event.repeat.contains(&day_day) {
+                let eventc = Event {
+                    description: event.description.clone(),
+                    start: event.start.clone(),
+                    end: event.end.clone(),
+                    repeat: event.repeat.clone(),
+                    id: event.id,
+                };
+                todays_events.push(eventc);
+            }
+        }
+        todays_events.sort_by(|e1, e2| {
+            let e1_vec : Vec<&str> = e1.start.split(":").collect();
+            let e2_vec : Vec<&str> = e2.start.split(":").collect();
+            let e1_hour = e1_vec[0].to_string().parse::<i32>().unwrap();
+            let e2_hour = e2_vec[0].to_string().parse::<i32>().unwrap();
+            //last two characters of e1_vec[1] are am or pm
+            let e1_ampm = &e1_vec[1][e1_vec[1].len()-2..];
+            let e2_ampm = &e2_vec[1][e2_vec[1].len()-2..];
+            //remove am or pm from e1_vec[1] and parse to int
+            let e1_min = e1_vec[1][0..e1_vec[1].len()-2].to_string().parse::<i32>().unwrap();
+            let e2_min = e2_vec[1][0..e2_vec[1].len()-2].to_string().parse::<i32>().unwrap();
+            if e1_ampm == "am" && e2_ampm == "pm" {
+                return std::cmp::Ordering::Less;
+            }
+            else if e1_ampm == "pm" && e2_ampm == "am" {
+                return std::cmp::Ordering::Greater;
+            }
+            else if (e1_ampm == "am" && e2_ampm == "am") || (e1_ampm == "pm" && e2_ampm == "pm") {
+                if e1_hour < e2_hour {
+                    return std::cmp::Ordering::Less;
+                }
+                else if e1_hour > e2_hour {
+                    return std::cmp::Ordering::Greater;
+                }
+                else {
+                    if e1_min < e2_min {
+                        return std::cmp::Ordering::Less;
+                    }
+                    else if e1_min > e2_min {
+                        return std::cmp::Ordering::Greater;
+                    }
+                    else {
+                        return std::cmp::Ordering::Equal;
+                    }
+                }
+            }
+            else {
+                return std::cmp::Ordering::Equal;
+            }
+        });
+        //make a table with start time + description of events in todays_events and place it in the box
+        let rows = todays_events.iter().map(|event| Row::new(vec![
+            event.start.clone(),
+            event.description.clone(),
+        ]));
+        let widths = [Constraint::Length(7), Constraint::Length(20)];
+        let mut table = Table::new(rows, widths)
+            .block(day_box)
+            //.header(Row::new(vec!["Start", "Description"]).bottom_margin(1).style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)))
+            .style(Style::default().fg(Color::White).bg(Color::Black))
+            .highlight_style(Style::default().add_modifier(Modifier::BOLD))
+            .highlight_symbol(">>");
+        if day_date == today_date {
+            table = table.style(Style::default().fg(Color::Green).bg(Color::Black));
+        }
+        frame.render_widget(table, agenda_layout[i]);
+        day = day + Duration::days(1);
+    }
+    let mut block = Block::default().style(Style::default().fg(Color::Red).add_modifier(Modifier::BOLD).bg(Color::Black));
+    frame.render_widget(block, agenda_layout[7]);
+
+    let taskevents_layout = Layout::new(
+        Direction::Horizontal,
+        [
+            Constraint::Percentage(50),
+            Constraint::Percentage(50),
+        ]
+    ).split(main_layout[1]);
+
+    //border on top and bottom
+    frame.render_widget(
+        Block::new().title("vayu dashboard - v0.0.1 - press 'q' to quit").title_alignment(Alignment::Center),
+        main_layout[0],
+    );
+
+    let mut table_state = TableState::default();
+    
+    //rendering the task list
+    let rows = tasks.iter().map(|task| Row::new(vec![
+        task.id.to_string(),
+        task.due.clone(),
+        task.description.clone(),
+    ]));
+    let widths = [Constraint::Length(4), Constraint::Length(10), Constraint::Length(20)];
+    let table = Table::new(rows, widths)
+        .block(Block::default().title("Task List"))
+        .header(Row::new(vec!["ID", "Due", "Description"]).bottom_margin(1).style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)))
+        .style(Style::default().fg(Color::White).bg(Color::Black))
+        .highlight_style(Style::default().add_modifier(Modifier::BOLD))
+        .highlight_symbol(">>");
+    frame.render_stateful_widget(table, taskevents_layout[0], &mut table_state);
+
+    //rendering box with title "temp" for now.
+    //feature for this area not decided yet.
+    let temp_box = Block::default().title("temp").style(Style::default().fg(Color::White).bg(Color::Black));
+    frame.render_widget(temp_box, taskevents_layout[1]);
+
 }
