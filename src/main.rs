@@ -577,7 +577,6 @@ fn vayu_ui(tasks: &mut Vec<Task>, events: &mut Vec<Event>) -> io::Result<()> {
     Ok(())
 }
 
-
 fn ui(frame: &mut Frame, tasks: &mut Vec<Task>, events: &mut Vec<Event>) {
     //main window
     let main_layout = Layout::new(
