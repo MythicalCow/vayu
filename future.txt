@@ -1,9 +1,10 @@
 short term goals
-- add music to pomodoro system
-- agenda and event system
+- DONE - agenda and event system
+- add command support within ui
 
 medium term goals
-- better ui
+- DONE - better ui
+- add music to pomodoro system
 
 long term goals
 - natural language processing for task scheduling

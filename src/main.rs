@@ -433,7 +433,8 @@ fn daily_agenda(events: &mut Vec<Event>) {
     let now = Local::now();
     let today_date = now.format("%Y-%m-%d").to_string();
     //get the day of the week as a string (monday, tuesday, etc.)
-    let today_day = now.format("%A").to_string();
+    //let today_day = now.format("%A").to_string();
+    let today_day = "wednesday";
     //lowercase the day of the week
     let today_day = today_day.to_lowercase();
     let mut todays_events : Vec<Event> = Vec::new();
@@ -453,14 +454,26 @@ fn daily_agenda(events: &mut Vec<Event>) {
     todays_events.sort_by(|e1, e2| {
         let e1_vec : Vec<&str> = e1.start.split(":").collect();
         let e2_vec : Vec<&str> = e2.start.split(":").collect();
-        let e1_hour = e1_vec[0].to_string().parse::<i32>().unwrap();
-        let e2_hour = e2_vec[0].to_string().parse::<i32>().unwrap();
+        let mut e1_hour = e1_vec[0].to_string().parse::<i32>().unwrap();
+        let mut e2_hour = e2_vec[0].to_string().parse::<i32>().unwrap();
         //last two characters of e1_vec[1] are am or pm
         let e1_ampm = &e1_vec[1][e1_vec[1].len()-2..];
         let e2_ampm = &e2_vec[1][e2_vec[1].len()-2..];
         //remove am or pm from e1_vec[1] and parse to int
         let e1_min = e1_vec[1][0..e1_vec[1].len()-2].to_string().parse::<i32>().unwrap();
         let e2_min = e2_vec[1][0..e2_vec[1].len()-2].to_string().parse::<i32>().unwrap();
+        if e1_hour == 12 && e1_ampm == "am" {
+            e1_hour = 0;
+        }
+        if e2_hour == 12 && e2_ampm == "am" {
+            e2_hour = 0;
+        }
+        if e1_hour == 12 && e1_ampm == "pm" {
+            e1_hour = 0;
+        }
+        if e2_hour == 12 && e2_ampm == "pm" {
+            e2_hour = 0;
+        }
         if e1_ampm == "am" && e2_ampm == "pm" {
             return std::cmp::Ordering::Less;
         }
@@ -549,7 +562,14 @@ fn vayu_ui(tasks: &mut Vec<Task>, events: &mut Vec<Event>) -> io::Result<()> {
     let mut should_quit = false;
     while !should_quit {
         terminal.draw(|f| ui(f, task_clone, event_clone))?;
-        should_quit = handle_events()?;
+        if event::poll(std::time::Duration::from_millis(50))? {
+            if let UIEvent::Key(key) = event::read()? {
+                //if key is q, quit
+                if key.kind == event::KeyEventKind::Press && key.code == KeyCode::Char('q') {
+                    should_quit = true;
+                }
+            }
+        }
     }
 
     disable_raw_mode()?;
@@ -557,16 +577,6 @@ fn vayu_ui(tasks: &mut Vec<Task>, events: &mut Vec<Event>) -> io::Result<()> {
     Ok(())
 }
 
-fn handle_events() -> io::Result<bool> {
-    if event::poll(std::time::Duration::from_millis(50))? {
-        if let UIEvent::Key(key) = event::read()? {
-            if key.kind == event::KeyEventKind::Press && key.code == KeyCode::Char('q') {
-                return Ok(true);
-            }
-       }
-    }
-    Ok(false)
-}
 
 fn ui(frame: &mut Frame, tasks: &mut Vec<Task>, events: &mut Vec<Event>) {
     //main window
@@ -627,14 +637,26 @@ fn ui(frame: &mut Frame, tasks: &mut Vec<Task>, events: &mut Vec<Event>) {
         todays_events.sort_by(|e1, e2| {
             let e1_vec : Vec<&str> = e1.start.split(":").collect();
             let e2_vec : Vec<&str> = e2.start.split(":").collect();
-            let e1_hour = e1_vec[0].to_string().parse::<i32>().unwrap();
-            let e2_hour = e2_vec[0].to_string().parse::<i32>().unwrap();
+            let mut e1_hour = e1_vec[0].to_string().parse::<i32>().unwrap();
+            let mut e2_hour = e2_vec[0].to_string().parse::<i32>().unwrap();
             //last two characters of e1_vec[1] are am or pm
             let e1_ampm = &e1_vec[1][e1_vec[1].len()-2..];
             let e2_ampm = &e2_vec[1][e2_vec[1].len()-2..];
             //remove am or pm from e1_vec[1] and parse to int
             let e1_min = e1_vec[1][0..e1_vec[1].len()-2].to_string().parse::<i32>().unwrap();
             let e2_min = e2_vec[1][0..e2_vec[1].len()-2].to_string().parse::<i32>().unwrap();
+            if e1_hour == 12 && e1_ampm == "am" {
+                e1_hour = 0;
+            }
+            if e2_hour == 12 && e2_ampm == "am" {
+                e2_hour = 0;
+            }
+            if e1_hour == 12 && e1_ampm == "pm" {
+                e1_hour = 0;
+            }
+            if e2_hour == 12 && e2_ampm == "pm" {
+                e2_hour = 0;
+            }
             if e1_ampm == "am" && e2_ampm == "pm" {
                 return std::cmp::Ordering::Less;
             }
@@ -696,7 +718,7 @@ fn ui(frame: &mut Frame, tasks: &mut Vec<Task>, events: &mut Vec<Event>) {
 
     //border on top and bottom
     frame.render_widget(
-        Block::new().title("vayu dashboard - v0.1.4 - press 'q' to quit").title_alignment(Alignment::Center).style(Style::default().fg(Color::Blue).bg(Color::Black)),
+        Block::new().title("vayu dashboard - press 'q' to quit").title_alignment(Alignment::Center).style(Style::default().fg(Color::Blue).bg(Color::Black)),
         main_layout[0],
     );
 
