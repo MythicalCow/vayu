@@ -726,11 +726,12 @@ fn ui(frame: &mut Frame, tasks: &mut Vec<Task>, events: &mut Vec<Event>) {
         event.start.clone(),
         event.end.clone(),
         event.description.clone(),
+        event.repeat.clone(),
     ]));
     let widths = [Constraint::Length(4), Constraint::Length(10), Constraint::Length(10), Constraint::Length(20)];
     let table = Table::new(rows, widths)
         .block(Block::default().title("Event List"))
-        .header(Row::new(vec!["  ", "  ", "  ", "  "]).bottom_margin(1).style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)))
+        .header(Row::new(vec!["  ", "  ", "  ", "  "," "]).bottom_margin(1).style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)))
         .style(Style::default().fg(Color::White).bg(Color::Black))
         .highlight_style(Style::default().add_modifier(Modifier::BOLD))
         .highlight_symbol(">>");
