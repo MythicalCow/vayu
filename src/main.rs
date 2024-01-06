@@ -542,7 +542,7 @@ fn vayu_ui(tasks: &mut Vec<Task>, events: &mut Vec<Event>) -> io::Result<()> {
     //      task list                          weekly calendar
     let task_clone : &mut Vec<Task> = tasks;
     let event_clone : &mut Vec<Event> = events;
-    //enable_raw_mode()?;
+    enable_raw_mode()?;
     stdout().execute(EnterAlternateScreen)?;
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
 
@@ -582,6 +582,7 @@ fn ui(frame: &mut Frame, tasks: &mut Vec<Task>, events: &mut Vec<Event>) {
     let agenda_layout = Layout::new(
         Direction::Horizontal,
         [
+            Constraint::Percentage(4),
             Constraint::Percentage(14),
             Constraint::Percentage(14),
             Constraint::Percentage(14),
@@ -589,7 +590,6 @@ fn ui(frame: &mut Frame, tasks: &mut Vec<Task>, events: &mut Vec<Event>) {
             Constraint::Percentage(14),
             Constraint::Percentage(14),
             Constraint::Percentage(14),
-            Constraint::Percentage(2),
         ]
     ).split(main_layout[2]);
 
@@ -605,9 +605,11 @@ fn ui(frame: &mut Frame, tasks: &mut Vec<Task>, events: &mut Vec<Event>) {
         let day_day = day_day.to_lowercase();
         //make a string with date + day
         let mut day_str = day_date.clone();
+        let mut cat_day = day_day.clone();
+        cat_day.truncate(3);
         day_str.push_str(" ");
-        day_str.push_str(&day_day);
-        let mut day_box = Block::default().title(day_str.clone());
+        day_str.push_str(&cat_day);
+        let day_box = Block::default().title(day_str.clone());
         //rendering the calendar
         let mut todays_events : Vec<Event> = Vec::new();
         for event in &mut *events {
@@ -677,28 +679,32 @@ fn ui(frame: &mut Frame, tasks: &mut Vec<Task>, events: &mut Vec<Event>) {
         if day_date == today_date {
             table = table.style(Style::default().fg(Color::Green).bg(Color::Black));
         }
-        frame.render_widget(table, agenda_layout[i]);
+        frame.render_widget(table, agenda_layout[i+1]);
         day = day + Duration::days(1);
     }
-    let mut block = Block::default().style(Style::default().fg(Color::Red).add_modifier(Modifier::BOLD).bg(Color::Black));
-    frame.render_widget(block, agenda_layout[7]);
+    let block = Block::default().style(Style::default().fg(Color::Red).add_modifier(Modifier::BOLD).bg(Color::Black));
+    frame.render_widget(block, agenda_layout[0]);
 
     let taskevents_layout = Layout::new(
         Direction::Horizontal,
         [
-            Constraint::Percentage(50),
-            Constraint::Percentage(50),
+            Constraint::Percentage(4),
+            Constraint::Percentage(48),
+            Constraint::Percentage(48),
         ]
     ).split(main_layout[1]);
 
     //border on top and bottom
     frame.render_widget(
-        Block::new().title("vayu dashboard - v0.0.1 - press 'q' to quit").title_alignment(Alignment::Center),
+        Block::new().title("vayu dashboard - v0.1.4 - press 'q' to quit").title_alignment(Alignment::Center).style(Style::default().fg(Color::Blue).bg(Color::Black)),
         main_layout[0],
     );
 
     let mut table_state = TableState::default();
     
+    let block_padding = Block::default().style(Style::default().fg(Color::White).bg(Color::Black));
+    frame.render_widget(block_padding, taskevents_layout[0]);
+
     //rendering the task list
     let rows = tasks.iter().map(|task| Row::new(vec![
         task.id.to_string(),
@@ -708,15 +714,27 @@ fn ui(frame: &mut Frame, tasks: &mut Vec<Task>, events: &mut Vec<Event>) {
     let widths = [Constraint::Length(4), Constraint::Length(10), Constraint::Length(20)];
     let table = Table::new(rows, widths)
         .block(Block::default().title("Task List"))
-        .header(Row::new(vec!["ID", "Due", "Description"]).bottom_margin(1).style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)))
+        .header(Row::new(vec!["  ", "  ", "  "]).bottom_margin(1).style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)))
         .style(Style::default().fg(Color::White).bg(Color::Black))
         .highlight_style(Style::default().add_modifier(Modifier::BOLD))
         .highlight_symbol(">>");
-    frame.render_stateful_widget(table, taskevents_layout[0], &mut table_state);
+    frame.render_stateful_widget(table, taskevents_layout[1], &mut table_state);
 
-    //rendering box with title "temp" for now.
-    //feature for this area not decided yet.
-    let temp_box = Block::default().title("temp").style(Style::default().fg(Color::White).bg(Color::Black));
-    frame.render_widget(temp_box, taskevents_layout[1]);
+    //rendering the event list
+    let rows = events.iter().map(|event| Row::new(vec![
+        event.id.to_string(),
+        event.start.clone(),
+        event.end.clone(),
+        event.description.clone(),
+    ]));
+    let widths = [Constraint::Length(4), Constraint::Length(10), Constraint::Length(10), Constraint::Length(20)];
+    let table = Table::new(rows, widths)
+        .block(Block::default().title("Event List"))
+        .header(Row::new(vec!["  ", "  ", "  ", "  "]).bottom_margin(1).style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)))
+        .style(Style::default().fg(Color::White).bg(Color::Black))
+        .highlight_style(Style::default().add_modifier(Modifier::BOLD))
+        .highlight_symbol(">>");
+    frame.render_stateful_widget(table, taskevents_layout[2], &mut table_state);
+    
 
 }

@@ -17,6 +17,8 @@ To check if vayu has been installed properly open a new terminal window and type
 
 If there is an empty list then congratulations the installation was successful! If not ensure rust is included in your path variable as explained on the rust installation page.
 # Usage and Examples
+# main dashboard (calendar, task list, event list)
+`vayu`
 ### to view a list of current tasks use:
 `vayu list`
 ### to add a task use:
