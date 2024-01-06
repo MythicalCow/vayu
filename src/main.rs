@@ -299,6 +299,11 @@ fn remove_task(tasks: &mut Vec<Task>, arg1: String) {
 fn pomodoro(arg1: String, arg2: String, arg3: String){
     //we will use the chrono crate to get the current time and to calculate the time remaining
     //we will use indicatif to display a progress bar
+    //if any of the arguments are empty, throw error
+    if arg1 == "" || arg2 == "" || arg3 == "" {
+        println!("invalid usage of pomo. use --help to see usage");
+        return;
+    }
     let iterations = arg1.parse::<i32>().unwrap();
     let work_time = arg2.parse::<i32>().unwrap();
     let break_time = arg3.parse::<i32>().unwrap();
