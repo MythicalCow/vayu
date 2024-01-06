@@ -13,7 +13,7 @@ Then in Windows PowerShell or the approriate Terminal for your OS type in:
 `cargo install vayu`
 
 To check if vayu has been installed properly open a new terminal window and type:
-`vayu list`
+`vayu`
 
 If there is an empty list then congratulations the installation was successful! If not ensure rust is included in your path variable as explained on the rust installation page.
 # Usage and Examples
