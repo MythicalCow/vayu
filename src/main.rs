@@ -12,7 +12,7 @@ use crossterm::{
 };
 use ratatui::{prelude::*, widgets::*};
 
-use clap::Parser;
+use clap::{Parser};
 use std::fs::File;
 use std::path::Path;
 use chrono::{Local,Duration};
@@ -20,22 +20,61 @@ use std::io::prelude::*;
 use chrono::Datelike;
 use indicatif::ProgressBar;
 
+//rewrite for CLI parser using subcommand feature
+//add, list, done, pomo, eadd, elist, eids, erem
+#[derive(Parser)]
+enum SubComm {
+    Add{
+        /// task description and due date (YYYY-MM-DD or today,yesterday,monday,etc.) separated by a colon. Ex: "vayu add yoga due:today"
+        arg1: String,
+    },
+    List{
+    },
+    Done{
+        /// task id. Ex: "vayu done 1"
+        arg1: String,
+    },
+    Pomo{
+        /// number of work sessions
+        arg1: String,
+        /// length of work session in minutes
+        arg2: String,
+        /// length of break session in minutes
+        arg3: String,
+    },
+    Eadd{
+        /// event description
+        arg1: String,
+        /// event start time (H:MMam or H:MMpm)
+        arg2: String,
+        /// event end time (H:MMam or H:MMpm)
+        arg3: String,
+        /// event repeat (day1,day2,day3,day4,day5,day6,day7 where dayi is a day of the week) or (YYYY-MM-DD) or (everyday,weekday,weekend)
+        arg4: String,
+    },
+    Elist{
+    },
+    Eids{
+    },
+    Erem{
+        /// event id to remove
+        arg1: String,
+    },
+}
+
 
 
 //struct for the main command.
 #[derive(Parser)]
-struct Command {
-    /// {add,list,done,pomo} add: add a new task, list: list all tasks, done: mark a task as done, pomo: pomodoro timer ex: vayu pomo 3 50 10 (3 sessions of 50 minute work and 10 minute break)
+struct Arguments {
     #[clap(default_value = "")]
     command: String,
-    /// {add} task description and due date (YYYY-MM-DD or today,yesterday,monday,etc.) separated by a colon. Ex: "vayu add yoga due:today" {done} task id. Ex: "vayu done 1"
     #[clap(default_value = "")]
     arg1: String,
     #[clap(default_value = "")]
     arg2: String,
     #[clap(default_value = "")]
     arg3: String,
-    /// {eadd} used for specifiying event repeat. ex: "vayu eadd yoga 8:00am 9:00am monday,tuesday,friday" 
     #[clap(default_value = "")]
     arg4: String,
 }
@@ -131,40 +170,110 @@ fn main() {
 
 
 
-    //TASK LIST PARSING FROM CLI
-    let command : Command = Command::parse();
-    if command.command == "" {
-        let _ = vayu_ui(&mut tasks, &mut events);
-    }
-    else if command.command == "add" {
-        add_task(&mut tasks, next_id, command.arg1);
-        list_tasks(&mut tasks);
-    } 
-    else if command.command == "list" {
-        list_tasks(&mut tasks);
-    } 
-    else if command.command == "done" {
-        remove_task(&mut tasks, command.arg1);
-    }
-    else if command.command == "pomo" {
-        pomodoro(command.arg1, command.arg2, command.arg3);
-    }
-    else if command.command == "eadd" {
-        add_event(&mut events, command.arg1, command.arg2, command.arg3, command.arg4, next_event_id);
-    }
-    else if command.command == "elist" {
-        daily_agenda(&mut events);
-    }
-    else if command.command == "eids" {
-        list_event_ids(&mut events);
-    }
-    else if command.command == "erem" {
-        remove_event(&mut events, command.arg1);
-    }
-    else {
-        println!("unknown command. use --help to see available commands");
-    }
+    //CLI PARSING
+    let matches = Arguments::parse();
+    match matches.command.as_str() {
+        //use the subcommands so that --help works for each subcommand
+        //we want to see the internal comments for each subcommand so we can't use the macro
+        "add" => {
+            let submatches = SubComm::parse();
+            match submatches {
+                SubComm::Add{arg1} => {
+                    add_task(&mut tasks, next_id, arg1);
+                },
+                _ => {
+                    println!("invalid usage of add. use --help to see usage");
+                }
+            }
+        },
+        "list" => {
+            let submatches = SubComm::parse();
+            match submatches {
+                SubComm::List{} => {
+                    list_tasks(&mut tasks);
+                },
+                _ => {
+                    println!("invalid usage of list. use --help to see usage");
+                }
+            }
+        },
+        "done" => {
+            let submatches = SubComm::parse();
+            match submatches {
+                SubComm::Done{arg1} => {
+                    remove_task(&mut tasks, arg1);
+                },
+                _ => {
+                    println!("invalid usage of done. use --help to see usage");
+                }
+            }
+        },
+        "pomo" => {
+            let submatches = SubComm::parse();
+            match submatches {
+                SubComm::Pomo{arg1, arg2, arg3} => {
+                    pomodoro(arg1, arg2, arg3);
+                },
+                _ => {
+                    println!("invalid usage of pomo. use --help to see usage");
+                }
+            }
+        },
+        "eadd" => {
+            let submatches = SubComm::parse();
+            match submatches {
+                SubComm::Eadd{arg1, arg2, arg3, arg4} => {
+                    add_event(&mut events, arg1, arg2, arg3, arg4, next_event_id);
+                },
+                _ => {
+                    println!("invalid usage of eadd. use --help to see usage");
+                }
+            }
+        },
+        "elist" => {
+            let submatches = SubComm::parse();
+            match submatches {
+                SubComm::Elist{} => {
+                    daily_agenda(&mut events);
+                },
+                _ => {
+                    println!("invalid usage of elist. use --help to see usage");
+                }
+            }
+        },
+        "eids" => {
+            let submatches = SubComm::parse();
+            match submatches {
+                SubComm::Eids{} => {
+                    list_event_ids(&mut events);
+                },
+                _ => {
+                    println!("invalid usage of eids. use --help to see usage");
+                }
+            }
+        },
+        "erem" => {
+            let submatches = SubComm::parse();
+            match submatches {
+                SubComm::Erem{arg1} => {
+                    remove_event(&mut events, arg1);
+                },
+                _ => {
+                    println!("invalid usage of erem. use --help to see usage");
+                }
+            }
+        },
+        "" => {
+            //if no command is given, run the vayu ui
+            vayu_ui(&mut tasks, &mut events).expect("error");
+        },
+        _ => {
+            println!("invalid command. use --help to see usage");
+        }
 
+
+
+    }
     //write the task list to the file
     let mut file = File::create("tasks.txt").expect("Unable to create file");
     for task in tasks {
