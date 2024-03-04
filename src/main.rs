@@ -11,13 +11,12 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}
 };
 use ratatui::{prelude::*, widgets::*};
-
-use clap::{Parser};
+use clap::Parser;
 use std::fs::File;
 use std::path::Path;
 use chrono::{Local,Duration};
 use std::io::prelude::*;
-use chrono::Datelike;
+//use chrono::Datelike;
 use indicatif::ProgressBar;
 
 //rewrite for CLI parser using subcommand feature
@@ -26,6 +25,10 @@ use indicatif::ProgressBar;
 enum SubComm {
     Add{
         /// task description and due date (YYYY-MM-DD or today,yesterday,monday,etc.) separated by a colon. Ex: "vayu add yoga due:today"
+        arg1: String,
+    },
+    Auto{
+        /// auto generate a task. Ex: vayu auto "test at end of month"
         arg1: String,
     },
     List{
@@ -61,8 +64,6 @@ enum SubComm {
         arg1: String,
     },
 }
-
-
 
 //struct for the main command.
 #[derive(Parser)]
@@ -186,6 +187,17 @@ fn main() {
                 }
             }
         },
+        "auto" => {
+            let submatches = SubComm::parse();
+            match submatches {
+                SubComm::Auto{arg1} => {
+                    add_auto(&mut tasks, next_id, arg1);
+                },
+                _ => {
+                    println!("invalid usage of auto. use --help to see usage");
+                }
+            }
+        }
         "list" => {
             let submatches = SubComm::parse();
             match submatches {
@@ -341,39 +353,26 @@ fn add_task(tasks: &mut Vec<Task>, next_id: i32, arg1: String) {
     if due_date == "today" {
         due_date = now.format("%Y-%m-%d").to_string();
     } 
-    else if due_date == "sunday"{
-        let days_until_sunday = 7 - now.weekday().num_days_from_sunday();
-        due_date = (now + Duration::days(days_until_sunday.into())).format("%Y-%m-%d").to_string();
-    }
-    else if due_date == "monday"{
-        let days_until_monday = 1 - now.weekday().num_days_from_sunday();
-        due_date = (now + Duration::days(days_until_monday.into())).format("%Y-%m-%d").to_string();
-    }
-    else if due_date == "tuesday"{
-        let days_until_tuesday = 2 - now.weekday().num_days_from_sunday();
-        due_date = (now + Duration::days(days_until_tuesday.into())).format("%Y-%m-%d").to_string();
-    }
-    else if due_date == "wednesday"{
-        let days_until_wednesday = 3 - now.weekday().num_days_from_sunday();
-        due_date = (now + Duration::days(days_until_wednesday.into())).format("%Y-%m-%d").to_string();
-    }
-    else if due_date == "thursday"{
-        let days_until_thursday = 4 - now.weekday().num_days_from_sunday();
-        due_date = (now + Duration::days(days_until_thursday.into())).format("%Y-%m-%d").to_string();
-    }
-    else if due_date == "friday"{
-        let days_until_friday = 5 - now.weekday().num_days_from_sunday();
-        due_date = (now + Duration::days(days_until_friday.into())).format("%Y-%m-%d").to_string();
-    }
-    else if due_date == "saturday"{
-        let days_until_saturday = 6 - now.weekday().num_days_from_sunday();
-        due_date = (now + Duration::days(days_until_saturday.into())).format("%Y-%m-%d").to_string();
-    }
     else if due_date == "tomorrow" {
         due_date = (now + Duration::days(1)).format("%Y-%m-%d").to_string();
     } 
     else if due_date == "yesterday" {
         due_date = (now - Duration::days(1)).format("%Y-%m-%d").to_string();
+    }
+    else if due_date == "sunday" || due_date == "monday" || due_date == "tuesday" || due_date == "wednesday" || due_date == "thursday" || due_date == "friday" || due_date == "saturday"{
+        let mut duecp = due_date.clone();
+        let capsdate = duecp.remove(0).to_uppercase().to_string() + &duecp;
+        let mut day = now;
+        while day.format("%A").to_string() != capsdate{
+            day = day + Duration::days(1);
+        }
+        if now.format("%A").to_string() == capsdate{
+            day = day + Duration::days(7);
+        }
+        due_date = day.format("%Y-%m-%d").to_string();
+    }
+    else{
+        println!("invalid due date. use YYYY-MM-DD or today, tomorrow, yesterday, or a day of the week");
     }
 
 
@@ -387,6 +386,246 @@ fn add_task(tasks: &mut Vec<Task>, next_id: i32, arg1: String) {
     };
     tasks.push(task);
     println!("task added with id {}", next_id)
+}
+
+fn add_auto(tasks: &mut Vec<Task>, next_id: i32, arg1: String) {
+    //if "end" and "month" are in the arg1 string, add a task for the end of the month
+    if arg1.contains("end") && arg1.contains("month") {
+        //get the current date
+        let mut now = Local::now();
+        //while next day is in the same month, add one day
+        while(now + Duration::days(1)).format("%m").to_string() == now.format("%m").to_string() {
+            now = now + Duration::days(1);
+        }
+        //set the due date to now in the format YYYY-MM-DD
+        let last_day = now.format("%Y-%m-%d").to_string();
+
+        //remove end and month from the arg1 string
+        let mut task_desc = arg1.replace("end", "");
+        task_desc = task_desc.replace("month", "");
+        //while the task description has a last word of "by", "at", "of" or "on",  remove the last word
+        let mut task_desc_vec : Vec<&str> = task_desc.split(" ").collect();
+        //remove all "" entries
+        task_desc_vec.retain(|&x| x != "");
+        let mut last_word: &str = task_desc_vec[task_desc_vec.len()-1];  
+        let mut desc_temp: String = task_desc.clone();
+        //print last_word
+        while last_word == "by" || last_word == "at" || last_word == "of" || last_word == "on" || last_word == "the" || last_word == "this" {
+            task_desc_vec.pop();
+            desc_temp = task_desc_vec.join(" ");
+            last_word = task_desc_vec[task_desc_vec.len()-1];
+        }
+
+        //print the due date and task description and ask for confirmation
+        println!("Auto Generated Task with due date: {}. Is it ok (type yes/y)? ", last_day);
+        stdout().flush().unwrap();
+        //get user input
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).expect("error");
+        //if the user input is not "y" or "yes", return
+        if input.to_lowercase().trim() != "y" && input.to_lowercase().trim() != "yes" {
+            println!("task not added");
+            return;
+        }
+        else{
+            let task = Task {
+                description: desc_temp,
+                due: last_day,
+                done: false,
+                id: next_id,
+            };
+            tasks.push(task);
+            println!("task added with id {}", next_id);
+        }
+    }
+    //repeat for end of year
+    else if arg1.contains("end") && arg1.contains("year") {
+        //get the current date
+        let mut now = Local::now();
+        //while next day is in the same year, add one day
+        while(now + Duration::days(1)).format("%Y").to_string() == now.format("%Y").to_string() {
+            now = now + Duration::days(1);
+        }
+        //set the due date to now in the format YYYY-MM-DD
+        let last_day = now.format("%Y-%m-%d").to_string();
+
+        //remove end and year from the arg1 string
+        let mut task_desc = arg1.replace("end", "");
+        task_desc = task_desc.replace("year", "");
+        //while the task description has a last word of "by", "at", "of" or "on",  remove the last word
+        let mut task_desc_vec : Vec<&str> = task_desc.split(" ").collect();
+        task_desc_vec.retain(|&x| x != "");
+        let mut last_word: &str = task_desc_vec[task_desc_vec.len()-1];  
+        let mut desc_temp: String = task_desc.clone();
+        //print last_word
+        while last_word == "by" || last_word == "at" || last_word == "of" || last_word == "on" || last_word == "the" || last_word == "this" {
+            task_desc_vec.pop();
+            desc_temp = task_desc_vec.join(" ");
+            last_word = task_desc_vec[task_desc_vec.len()-1];
+        }
+
+        //print the due date and task description and ask for confirmation
+        println!("Auto Generated Task with due date: {}. Is it ok (type yes/y)? ", last_day);
+        stdout().flush().unwrap();
+        //get user input
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).expect("error");
+        //if the user input is not "y" or "yes", return
+        if input.to_lowercase().trim() != "y" && input.to_lowercase().trim() != "yes" {
+            println!("task not added");
+            return;
+        }
+        else{
+            let task = Task {
+                description: desc_temp,
+                due: last_day,
+                done: false,
+                id: next_id,
+            };
+            tasks.push(task);
+            println!("task added with id {}", next_id);
+        }
+    }
+    //repeat for end of week
+    else if arg1.contains("end") && arg1.contains("week") {
+        //get the current date
+        let mut now = Local::now();
+        //go until day is sunday
+        while(now + Duration::days(1)).format("%A").to_string() != "Sunday".to_string() {
+            now = now + Duration::days(1);
+        }
+        //set the due date to now in the format YYYY-MM-DD
+        let last_day = now.format("%Y-%m-%d").to_string();
+
+        //remove end and week from the arg1 string
+        let mut task_desc = arg1.replace("end", "");
+        task_desc = task_desc.replace("week", "");
+        //while the task description has a last word of "by", "at", "of" or "on",  remove the last word
+        let mut task_desc_vec : Vec<&str> = task_desc.split(" ").collect();
+        task_desc_vec.retain(|&x| x != "");
+        let mut last_word: &str = task_desc_vec[task_desc_vec.len()-1];  
+        let mut desc_temp: String = task_desc.clone();
+        //print last_word
+        while last_word == "by" || last_word == "at" || last_word == "of" || last_word == "on" || last_word == "the" || last_word == "this" {
+            task_desc_vec.pop();
+            desc_temp = task_desc_vec.join(" ");
+            last_word = task_desc_vec[task_desc_vec.len()-1];
+        }
+
+        //print the due date and task description and ask for confirmation
+        println!("Auto Generated Task with due date: {}. Is it ok (type yes/y)? ", last_day);
+        stdout().flush().unwrap();
+        //get user input
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).expect("error");
+        //if the user input is not "y" or "yes", return
+        if input.to_lowercase().trim() != "y" && input.to_lowercase().trim() != "yes" {
+            println!("task not added");
+            return;
+        }
+        else{
+            let task = Task {
+                description: desc_temp,
+                due: last_day,
+                done: false,
+                id: next_id,
+            };
+            tasks.push(task);
+            println!("task added with id {}", next_id);
+        }
+    }
+    //check for days of the week shorthands
+    else if arg1.contains(" mon") || arg1.contains(" tue") || arg1.contains(" wed") || arg1.contains(" thu") || arg1.contains(" fri") || arg1.contains(" sat") || arg1.contains(" sun") {
+        //get the current date
+        let mut now = Local::now();
+        //if " mon" due date is set to monday
+        if arg1.contains(" mon") {
+            while now.format("%A").to_string() != "Monday".to_string() {
+                now = now + Duration::days(1);
+            }
+        }
+        //if " tue" due date is set to tuesday
+        if arg1.contains(" tue") {
+            while now.format("%A").to_string() != "Tuesday".to_string() {
+                now = now + Duration::days(1);
+            }
+        }
+        //if " wed" due date is set to wednesday
+        if arg1.contains(" wed") {
+            while now.format("%A").to_string() != "Wednesday".to_string() {
+                now = now + Duration::days(1);
+            }
+        }
+        //if " thu" due date is set to thursday
+        if arg1.contains(" thu") {
+            while now.format("%A").to_string() != "Thursday".to_string() {
+                now = now + Duration::days(1);
+            }
+        }
+        //if " fri" due date is set to friday
+        if arg1.contains(" fri") {
+            while now.format("%A").to_string() != "Friday".to_string() {
+                now = now + Duration::days(1);
+            }
+        }
+        //if " sat" due date is set to saturday
+        if arg1.contains(" sat") {
+            while now.format("%A").to_string() != "Saturday".to_string() {
+                now = now + Duration::days(1);
+            }
+        }
+        //if " sun" due date is set to sunday
+        if arg1.contains(" sun") {
+            while now.format("%A").to_string() != "Sunday".to_string() {
+                now = now + Duration::days(1);
+            }
+        }
+
+        //set the due date to now in the format YYYY-MM-DD
+        let last_day = now.format("%Y-%m-%d").to_string();
+
+        //remove the day of the week from the arg1 string
+        let mut task_desc = arg1.replace("mon", "");
+        task_desc = task_desc.replace("tue", "");
+        task_desc = task_desc.replace("wed", "");
+        task_desc = task_desc.replace("thu", "");
+        task_desc = task_desc.replace("fri", "");
+        task_desc = task_desc.replace("sat", "");
+        task_desc = task_desc.replace("sun", "");
+        //while the task description has a last word of "by", "at", "of" or "on",  remove the last word
+        
+        let mut task_desc_vec : Vec<&str> = task_desc.split(" ").collect();
+        task_desc_vec.retain(|&x| x != "");
+        let mut last_word: &str = task_desc_vec[task_desc_vec.len()-1];  
+        let mut desc_temp: String = task_desc.clone();
+        //print last_word
+        while last_word == "by" || last_word == "at" || last_word == "of" || last_word == "on" || last_word == "the" || last_word == "this" {
+            task_desc_vec.pop();
+            desc_temp = task_desc_vec.join(" ");
+            last_word = task_desc_vec[task_desc_vec.len()-1];
+        }
+
+        //print the due date and task description and ask for confirmation
+        println!("Auto Generated Task with due date: {}. Is it ok (type yes/y)? ", last_day);
+        stdout().flush().unwrap();
+        //get user input
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).expect("error");
+        //if the user input is not "y" or "yes", return
+        if input.to_lowercase().trim() != "y" && input.to_lowercase().trim() != "yes" {
+            println!("task not added");
+        }
+        else{
+            let task = Task {
+                description: desc_temp,
+                due: last_day,
+                done: false,
+                id: next_id,
+            };
+            tasks.push(task);
+            println!("task added with id {}", next_id);
+        }
+    }     
 }
 
 fn remove_task(tasks: &mut Vec<Task>, arg1: String) {

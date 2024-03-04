@@ -20,5 +20,6 @@ clap = { version = "4.4.12", features = ["derive"] }
 colored = "2.1.0"
 crossterm = "0.27.0"
 indicatif = "0.17.7"
+rand = "0.8.5"
 ratatui = "0.25.0"
 
