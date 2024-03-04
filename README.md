@@ -24,6 +24,10 @@ If there is an empty list then congratulations the installation was successful! 
 ### to add a task use:
 `vayu add "task description due:YYYY-MM-DD"`
 note that YYYY-MM-DD can also be replaced with today, tomorrow, and days of the week
+
+### to add a task with natural language:
+`vayu auto "task description (some description of date)"
+
 ### to mark tasks as done:
 `vayu done id`
 where id is the listed id of the task viewable through `vayu list`
