@@ -583,15 +583,67 @@ fn add_auto(tasks: &mut Vec<Task>, next_id: i32, arg1: String) {
 
         //set the due date to now in the format YYYY-MM-DD
         let last_day = now.format("%Y-%m-%d").to_string();
+        let mut task_desc = arg1;
+        //remove the day of the week from the arg1 string (try removing anything from mon to monday)
+        let mut remmon: String = "monday".to_string();
+        while remmon.len() > 2{
+            if task_desc.contains(&remmon){
+                task_desc = task_desc.replace(&remmon, "");
+                
+            }
+            remmon.pop();
+        }
+        let mut remtues: String = "tuesday".to_string();
+        while remtues.len() > 2{
+            if task_desc.contains(&remtues){
+                task_desc = task_desc.replace(&remtues, "");
+                
+            }
+            remtues.pop();
+        }
+        let mut remwed: String = "wednesday".to_string();
+        while remwed.len() > 2{
+            if task_desc.contains(&remwed){
+                task_desc = task_desc.replace(&remwed, "");
+                
+            }
+            remwed.pop();
+        }
+        let mut remthurs: String = "thursday".to_string();
+        while remthurs.len() > 2{
+            if task_desc.contains(&remthurs){
+                task_desc = task_desc.replace(&remthurs, "");
+                
+            }
+            remthurs.pop();
+        }
+        let mut remfri: String = "friday".to_string();
+        while remfri.len() > 2{
+            if task_desc.contains(&remfri){
+                task_desc = task_desc.replace(&remfri, "");
+                
+            }
+            remfri.pop();
+        }
+        let mut remsat: String = "saturday".to_string();
+        while remsat.len() > 2{
+            if task_desc.contains(&remsat){
+                task_desc = task_desc.replace(&remsat, "");
+                
+            }
+            remsat.pop();
+        }
+        let mut remsun: String = "sunday".to_string();
+        while remsun.len() > 2{
+            if task_desc.contains(&remsun){
+                task_desc = task_desc.replace(&remsun, "");
+                
+            }
+            remsun.pop();
+        }
 
-        //remove the day of the week from the arg1 string
-        let mut task_desc = arg1.replace("mon", "");
-        task_desc = task_desc.replace("tue", "");
-        task_desc = task_desc.replace("wed", "");
-        task_desc = task_desc.replace("thu", "");
-        task_desc = task_desc.replace("fri", "");
-        task_desc = task_desc.replace("sat", "");
-        task_desc = task_desc.replace("sun", "");
+        
+
         //while the task description has a last word of "by", "at", "of" or "on",  remove the last word
         
         let mut task_desc_vec : Vec<&str> = task_desc.split(" ").collect();
