@@ -1,6 +1,6 @@
 [package]
 name = "vayu"
-version = "0.1.8"
+version = "0.1.9"
 edition = "2021"
 authors = ["Raghav Tirumale raghav.tirumale@gmail.com"]
 license = "MIT"
@@ -19,7 +19,10 @@ chrono = "0.4.31"
 clap = { version = "4.4.12", features = ["derive"] }
 colored = "2.1.0"
 crossterm = "0.27.0"
+event_parser = "0.1.1"
+icalendar = "0.16.0"
 indicatif = "0.17.7"
+date_time_parser = "0.1.0"
 rand = "0.8.5"
 ratatui = "0.25.0"
 

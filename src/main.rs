@@ -2,6 +2,10 @@ extern crate clap;
 extern crate colored;
 extern crate chrono;
 extern crate indicatif;
+extern crate date_time_parser;
+
+//date parsers.
+use date_time_parser::DateParser;
 
 //tui
 use std::io::{self, stdout, BufRead};
@@ -92,7 +96,7 @@ struct Task {
 
 #[allow(dead_code)]
 #[derive(Clone)]
-struct Event {
+struct Event1 {
     description: String,
     start: String,
     end: String,
@@ -144,14 +148,14 @@ fn main() {
     let mut next_event_id = 0;
 
     //reads the event list data into a vector of events. (this is used by event list and for updating the file after adding an event)
-    let mut events : Vec<Event> = Vec::new();
+    let mut events : Vec<Event1> = Vec::new();
     if let Ok(lines) = read_lines("events.txt") {
         // Consumes the iterator, returns an (Optional) String
         for line in lines {
             if let Ok(event) = line {
                 let event_vec : Vec<&str> = event.split("%").collect();
                 let event_id = event_vec[4].to_string().parse::<i32>().unwrap();
-                let event = Event {
+                let event = Event1 {
                     description: event_vec[0].to_string(),
                     start: event_vec[1].to_string(),
                     end: event_vec[2].to_string(),
@@ -388,296 +392,41 @@ fn add_task(tasks: &mut Vec<Task>, next_id: i32, arg1: String) {
     println!("task added with id {}", next_id)
 }
 
-fn add_auto(tasks: &mut Vec<Task>, next_id: i32, arg1: String) {
-    //if "end" and "month" are in the arg1 string, add a task for the end of the month
-    if arg1.contains("end") && arg1.contains("month") {
-        //get the current date
-        let mut now = Local::now();
-        //while next day is in the same month, add one day
-        while(now + Duration::days(1)).format("%m").to_string() == now.format("%m").to_string() {
-            now = now + Duration::days(1);
-        }
-        //set the due date to now in the format YYYY-MM-DD
-        let last_day = now.format("%Y-%m-%d").to_string();
+use chrono::format::strftime::StrftimeItems;
 
-        //remove end and month from the arg1 string
-        let mut task_desc = arg1.replace("end", "");
-        task_desc = task_desc.replace("month", "");
-        //while the task description has a last word of "by", "at", "of" or "on",  remove the last word
-        let mut task_desc_vec : Vec<&str> = task_desc.split(" ").collect();
-        //remove all "" entries
-        task_desc_vec.retain(|&x| x != "");
-        let mut last_word: &str = task_desc_vec[task_desc_vec.len()-1];  
-        let mut desc_temp: String = task_desc.clone();
-        //print last_word
-        while last_word == "by" || last_word == "at" || last_word == "of" || last_word == "on" || last_word == "the" || last_word == "this" {
-            task_desc_vec.pop();
-            desc_temp = task_desc_vec.join(" ");
-            last_word = task_desc_vec[task_desc_vec.len()-1];
-        }
-
-        //print the due date and task description and ask for confirmation
-        println!("Auto Generated Task with due date: {}. Is it ok (type yes/y)? ", last_day);
-        stdout().flush().unwrap();
-        //get user input
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).expect("error");
-        //if the user input is not "y" or "yes", return
-        if input.to_lowercase().trim() != "y" && input.to_lowercase().trim() != "yes" {
-            println!("task not added");
-            return;
-        }
-        else{
-            let task = Task {
-                description: desc_temp,
-                due: last_day,
-                done: false,
-                id: next_id,
-            };
-            tasks.push(task);
-            println!("task added with id {}", next_id);
-        }
+fn add_auto(tasks: &mut Vec<Task>, next_id: i32, arg1: String) {   
+    let fetchtask = DateParser::parse(&arg1);
+    let fmt = StrftimeItems::new("%Y-%m-%d");
+    //parse the option
+    match fetchtask {
+        //some or none
+        Some(date) => {
+            //ask user to confirm
+            let dt = date.format_with_items(fmt.clone()).to_string();
+            println!("auto generated task: {} due on {}", arg1, dt);
+            println!("confirm? (y/n)");
+            let mut confirm = String::new();
+            io::stdin().read_line(&mut confirm).expect("error");
+            if confirm.trim() == "y" {
+                let task = Task {
+                    description: arg1,
+                    due: dt,
+                    done: false,
+                    id: next_id,
+                };
+                tasks.push(task);
+                println!("task added with id {}", next_id);
+            }
+            else {
+                println!("task not added");
+            }
+        },
+        None => {
+            println!("invalid usage of auto. use --help to see usage");
+        }  
     }
-    //repeat for end of year
-    else if arg1.contains("end") && arg1.contains("year") {
-        //get the current date
-        let mut now = Local::now();
-        //while next day is in the same year, add one day
-        while(now + Duration::days(1)).format("%Y").to_string() == now.format("%Y").to_string() {
-            now = now + Duration::days(1);
-        }
-        //set the due date to now in the format YYYY-MM-DD
-        let last_day = now.format("%Y-%m-%d").to_string();
 
-        //remove end and year from the arg1 string
-        let mut task_desc = arg1.replace("end", "");
-        task_desc = task_desc.replace("year", "");
-        //while the task description has a last word of "by", "at", "of" or "on",  remove the last word
-        let mut task_desc_vec : Vec<&str> = task_desc.split(" ").collect();
-        task_desc_vec.retain(|&x| x != "");
-        let mut last_word: &str = task_desc_vec[task_desc_vec.len()-1];  
-        let mut desc_temp: String = task_desc.clone();
-        //print last_word
-        while last_word == "by" || last_word == "at" || last_word == "of" || last_word == "on" || last_word == "the" || last_word == "this" {
-            task_desc_vec.pop();
-            desc_temp = task_desc_vec.join(" ");
-            last_word = task_desc_vec[task_desc_vec.len()-1];
-        }
 
-        //print the due date and task description and ask for confirmation
-        println!("Auto Generated Task with due date: {}. Is it ok (type yes/y)? ", last_day);
-        stdout().flush().unwrap();
-        //get user input
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).expect("error");
-        //if the user input is not "y" or "yes", return
-        if input.to_lowercase().trim() != "y" && input.to_lowercase().trim() != "yes" {
-            println!("task not added");
-            return;
-        }
-        else{
-            let task = Task {
-                description: desc_temp,
-                due: last_day,
-                done: false,
-                id: next_id,
-            };
-            tasks.push(task);
-            println!("task added with id {}", next_id);
-        }
-    }
-    //repeat for end of week
-    else if arg1.contains("end") && arg1.contains("week") {
-        //get the current date
-        let mut now = Local::now();
-        //go until day is sunday
-        while(now + Duration::days(1)).format("%A").to_string() != "Sunday".to_string() {
-            now = now + Duration::days(1);
-        }
-        //set the due date to now in the format YYYY-MM-DD
-        let last_day = now.format("%Y-%m-%d").to_string();
-
-        //remove end and week from the arg1 string
-        let mut task_desc = arg1.replace("end", "");
-        task_desc = task_desc.replace("week", "");
-        //while the task description has a last word of "by", "at", "of" or "on",  remove the last word
-        let mut task_desc_vec : Vec<&str> = task_desc.split(" ").collect();
-        task_desc_vec.retain(|&x| x != "");
-        let mut last_word: &str = task_desc_vec[task_desc_vec.len()-1];  
-        let mut desc_temp: String = task_desc.clone();
-        //print last_word
-        while last_word == "by" || last_word == "at" || last_word == "of" || last_word == "on" || last_word == "the" || last_word == "this" {
-            task_desc_vec.pop();
-            desc_temp = task_desc_vec.join(" ");
-            last_word = task_desc_vec[task_desc_vec.len()-1];
-        }
-
-        //print the due date and task description and ask for confirmation
-        println!("Auto Generated Task with due date: {}. Is it ok (type yes/y)? ", last_day);
-        stdout().flush().unwrap();
-        //get user input
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).expect("error");
-        //if the user input is not "y" or "yes", return
-        if input.to_lowercase().trim() != "y" && input.to_lowercase().trim() != "yes" {
-            println!("task not added");
-            return;
-        }
-        else{
-            let task = Task {
-                description: desc_temp,
-                due: last_day,
-                done: false,
-                id: next_id,
-            };
-            tasks.push(task);
-            println!("task added with id {}", next_id);
-        }
-    }
-    //check for days of the week shorthands
-    else if arg1.contains(" mon") || arg1.contains(" tue") || arg1.contains(" wed") || arg1.contains(" thu") || arg1.contains(" fri") || arg1.contains(" sat") || arg1.contains(" sun") {
-        //get the current date
-        let mut now = Local::now();
-        //if " mon" due date is set to monday
-        if arg1.contains(" mon") {
-            while now.format("%A").to_string() != "Monday".to_string() {
-                now = now + Duration::days(1);
-            }
-        }
-        //if " tue" due date is set to tuesday
-        if arg1.contains(" tue") {
-            while now.format("%A").to_string() != "Tuesday".to_string() {
-                now = now + Duration::days(1);
-            }
-        }
-        //if " wed" due date is set to wednesday
-        if arg1.contains(" wed") {
-            while now.format("%A").to_string() != "Wednesday".to_string() {
-                now = now + Duration::days(1);
-            }
-        }
-        //if " thu" due date is set to thursday
-        if arg1.contains(" thu") {
-            while now.format("%A").to_string() != "Thursday".to_string() {
-                now = now + Duration::days(1);
-            }
-        }
-        //if " fri" due date is set to friday
-        if arg1.contains(" fri") {
-            while now.format("%A").to_string() != "Friday".to_string() {
-                now = now + Duration::days(1);
-            }
-        }
-        //if " sat" due date is set to saturday
-        if arg1.contains(" sat") {
-            while now.format("%A").to_string() != "Saturday".to_string() {
-                now = now + Duration::days(1);
-            }
-        }
-        //if " sun" due date is set to sunday
-        if arg1.contains(" sun") {
-            while now.format("%A").to_string() != "Sunday".to_string() {
-                now = now + Duration::days(1);
-            }
-        }
-
-        //set the due date to now in the format YYYY-MM-DD
-        let last_day = now.format("%Y-%m-%d").to_string();
-        let mut task_desc = arg1;
-        //remove the day of the week from the arg1 string (try removing anything from mon to monday)
-        let mut remmon: String = "monday".to_string();
-        while remmon.len() > 2{
-            if task_desc.contains(&remmon){
-                task_desc = task_desc.replace(&remmon, "");
-                
-            }
-            remmon.pop();
-        }
-        let mut remtues: String = "tuesday".to_string();
-        while remtues.len() > 2{
-            if task_desc.contains(&remtues){
-                task_desc = task_desc.replace(&remtues, "");
-                
-            }
-            remtues.pop();
-        }
-        let mut remwed: String = "wednesday".to_string();
-        while remwed.len() > 2{
-            if task_desc.contains(&remwed){
-                task_desc = task_desc.replace(&remwed, "");
-                
-            }
-            remwed.pop();
-        }
-        let mut remthurs: String = "thursday".to_string();
-        while remthurs.len() > 2{
-            if task_desc.contains(&remthurs){
-                task_desc = task_desc.replace(&remthurs, "");
-                
-            }
-            remthurs.pop();
-        }
-        let mut remfri: String = "friday".to_string();
-        while remfri.len() > 2{
-            if task_desc.contains(&remfri){
-                task_desc = task_desc.replace(&remfri, "");
-                
-            }
-            remfri.pop();
-        }
-        let mut remsat: String = "saturday".to_string();
-        while remsat.len() > 2{
-            if task_desc.contains(&remsat){
-                task_desc = task_desc.replace(&remsat, "");
-                
-            }
-            remsat.pop();
-        }
-        let mut remsun: String = "sunday".to_string();
-        while remsun.len() > 2{
-            if task_desc.contains(&remsun){
-                task_desc = task_desc.replace(&remsun, "");
-                
-            }
-            remsun.pop();
-        }
-
-        
-
-        //while the task description has a last word of "by", "at", "of" or "on",  remove the last word
-        
-        let mut task_desc_vec : Vec<&str> = task_desc.split(" ").collect();
-        task_desc_vec.retain(|&x| x != "");
-        let mut last_word: &str = task_desc_vec[task_desc_vec.len()-1];  
-        let mut desc_temp: String = task_desc.clone();
-        //print last_word
-        while last_word == "by" || last_word == "at" || last_word == "of" || last_word == "on" || last_word == "the" || last_word == "this" {
-            task_desc_vec.pop();
-            desc_temp = task_desc_vec.join(" ");
-            last_word = task_desc_vec[task_desc_vec.len()-1];
-        }
-
-        //print the due date and task description and ask for confirmation
-        println!("Auto Generated Task with due date: {}. Is it ok (type yes/y)? ", last_day);
-        stdout().flush().unwrap();
-        //get user input
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).expect("error");
-        //if the user input is not "y" or "yes", return
-        if input.to_lowercase().trim() != "y" && input.to_lowercase().trim() != "yes" {
-            println!("task not added");
-        }
-        else{
-            let task = Task {
-                description: desc_temp,
-                due: last_day,
-                done: false,
-                id: next_id,
-            };
-            tasks.push(task);
-            println!("task added with id {}", next_id);
-        }
-    }     
 }
 
 fn remove_task(tasks: &mut Vec<Task>, arg1: String) {
@@ -768,7 +517,7 @@ fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
         Ok(io::BufReader::new(file).lines())
 }
 
-fn add_event(events: &mut Vec<Event>, arg1: String, arg2: String, arg3: String, arg4: String, next_id: i32){
+fn add_event(events: &mut Vec<Event1>, arg1: String, arg2: String, arg3: String, arg4: String, next_id: i32){
     //if any arguments are empty, throw error
     if arg1 == "" || arg2 == "" || arg3 == "" {
         println!("invalid usage of eadd. use --help to see usage");
@@ -822,7 +571,7 @@ fn add_event(events: &mut Vec<Event>, arg1: String, arg2: String, arg3: String, 
         repeat = Local::now().format("%Y-%m-%d").to_string();
     }
     //if all criteria are met, add the event to the event list
-    let event = Event {
+    let event = Event1 {
         description: event_desc,
         start: start_time,
         end: end_time,
@@ -833,7 +582,7 @@ fn add_event(events: &mut Vec<Event>, arg1: String, arg2: String, arg3: String, 
     println!("event added with id {}", next_id);
 }
 
-fn daily_agenda(events: &mut Vec<Event>) {
+fn daily_agenda(events: &mut Vec<Event1>) {
     //get the current date
     let now = Local::now();
     let today_date = now.format("%Y-%m-%d").to_string();
@@ -842,11 +591,11 @@ fn daily_agenda(events: &mut Vec<Event>) {
     let today_day = "wednesday";
     //lowercase the day of the week
     let today_day = today_day.to_lowercase();
-    let mut todays_events : Vec<Event> = Vec::new();
+    let mut todays_events : Vec<Event1> = Vec::new();
     //get all events that repeat on today's date or today's day of the week
     for event in events {
         if event.repeat == today_date || event.repeat.contains(&today_day) {
-            let eventc = Event {
+            let eventc = Event1 {
                 description: event.description.clone(),
                 start: event.start.clone(),
                 end: event.end.clone(),
@@ -929,14 +678,14 @@ fn daily_agenda(events: &mut Vec<Event>) {
     
 }
 
-fn list_event_ids(events: &mut Vec<Event>) {
+fn list_event_ids(events: &mut Vec<Event1>) {
     for event in events {
         println!("{} - {}", event.description, event.id);
     }
 
 }
 
-fn remove_event(events: &mut Vec<Event>, arg1: String) {
+fn remove_event(events: &mut Vec<Event1>, arg1: String) {
     //parse the event id from the arg1 string
     let event_id = arg1.parse::<i32>().unwrap();
     //find the event with the given id and remove it from the event list
@@ -952,14 +701,14 @@ fn remove_event(events: &mut Vec<Event>, arg1: String) {
     println!("event with id {} not found", event_id);
 }
 
-fn vayu_ui(tasks: &mut Vec<Task>, events: &mut Vec<Event>) -> io::Result<()> {
+fn vayu_ui(tasks: &mut Vec<Task>, events: &mut Vec<Event1>) -> io::Result<()> {
     //ratatui ui with task list, calendar, and quote of the day
     //layout
     //                      *vayu*                              
     //                  quote of the day                        
     //      task list                          weekly calendar
     let task_clone : &mut Vec<Task> = tasks;
-    let event_clone : &mut Vec<Event> = events;
+    let event_clone : &mut Vec<Event1> = events;
     enable_raw_mode()?;
     stdout().execute(EnterAlternateScreen)?;
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
@@ -982,7 +731,7 @@ fn vayu_ui(tasks: &mut Vec<Task>, events: &mut Vec<Event>) -> io::Result<()> {
     Ok(())
 }
 
-fn ui(frame: &mut Frame, tasks: &mut Vec<Task>, events: &mut Vec<Event>) {
+fn ui(frame: &mut Frame, tasks: &mut Vec<Task>, events: &mut Vec<Event1>) {
     //main window
     let main_layout = Layout::new(
         Direction::Vertical,
@@ -1025,10 +774,10 @@ fn ui(frame: &mut Frame, tasks: &mut Vec<Task>, events: &mut Vec<Event>) {
         day_str.push_str(&cat_day);
         let day_box = Block::default().title(day_str.clone());
         //rendering the calendar
-        let mut todays_events : Vec<Event> = Vec::new();
+        let mut todays_events : Vec<Event1> = Vec::new();
         for event in &mut *events {
             if event.repeat == day_date || event.repeat.contains(&day_day) {
-                let eventc = Event {
+                let eventc = Event1 {
                     description: event.description.clone(),
                     start: event.start.clone(),
                     end: event.end.clone(),
@@ -1156,7 +905,7 @@ fn ui(frame: &mut Frame, tasks: &mut Vec<Task>, events: &mut Vec<Event>) {
     ]));
     let widths = [Constraint::Length(4), Constraint::Length(10), Constraint::Length(10), Constraint::Length(20), Constraint::Length(20)];
     let table = Table::new(rows, widths)
-        .block(Block::default().title("Event List"))
+        .block(Block::default().title("Event1 List"))
         .header(Row::new(vec!["  ", "  ", "  ", "  "," "]).bottom_margin(1).style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)))
         .style(Style::default().fg(Color::White).bg(Color::Black))
         .highlight_style(Style::default().add_modifier(Modifier::BOLD))
