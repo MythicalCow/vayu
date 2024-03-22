@@ -26,7 +26,7 @@ If there is an empty list then congratulations the installation was successful! 
 note that YYYY-MM-DD can also be replaced with today, tomorrow, and days of the week
 
 ### to add a task with natural language:
-`vayu auto "task description (some description of date)"
+`vayu auto "task description (some description of date)"`
 
 ### to mark tasks as done:
 `vayu done id`
