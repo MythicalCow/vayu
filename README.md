@@ -38,7 +38,6 @@ where id is the listed id of the task viewable through `vayu list`
 The following tools have better alternatives on the market currently and have hence are in a legacy state.
 * Event Planner
 * Main Dashboard
-* 
 
 # Contributions
 vayu wouldn't be possible without several great rust crates. For a full list of dependencies please checkout the `Cargo.toml` file. 
