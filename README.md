@@ -22,7 +22,7 @@ If there is an empty list then congratulations the installation was successful! 
 `vayu list`
 
 ### to add a task with natural language:
-`vayu auto "task description (some description of date)"
+`vayu auto "task description (some description of date)"`
 
 ### to mark tasks as done:
 `vayu done id`
