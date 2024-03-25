@@ -1,6 +1,6 @@
 [package]
 name = "vayu"
-version = "0.1.9"
+version = "0.1.10"
 edition = "2021"
 authors = ["Raghav Tirumale raghav.tirumale@gmail.com"]
 license = "MIT"
@@ -25,4 +25,7 @@ indicatif = "0.17.7"
 date_time_parser = "0.1.0"
 rand = "0.8.5"
 ratatui = "0.25.0"
+scraper = "0.19.0"
+reqwest = { version = "0.12.1", features = ["blocking"] }
+
 

@@ -10,9 +10,7 @@ use date_time_parser::DateParser;
 //tui
 use std::io::{self, stdout, BufRead};
 use crossterm::{
-    event::{self, Event as UIEvent, KeyCode},
-    ExecutableCommand,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}
+    event::{self, Event as UIEvent, KeyCode}, style::Stylize, terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}, ExecutableCommand
 };
 use ratatui::{prelude::*, widgets::*};
 use clap::Parser;
@@ -27,6 +25,8 @@ use indicatif::ProgressBar;
 //add, list, done, pomo, eadd, elist, eids, erem
 #[derive(Parser)]
 enum SubComm {
+    News{
+    },
     Add{
         /// task description and due date (YYYY-MM-DD or today,yesterday,monday,etc.) separated by a colon. Ex: "vayu add yoga due:today"
         arg1: String,
@@ -202,6 +202,17 @@ fn main() {
                 }
             }
         }
+        "news" => {
+            let submatches = SubComm::parse();
+            match submatches {
+                SubComm::News{} => {
+                    news();
+                },
+                _ => {
+                    println!("invalid usage of news. use --help to see usage");
+                }
+            }
+        },
         "list" => {
             let submatches = SubComm::parse();
             match submatches {
@@ -323,13 +334,13 @@ fn list_tasks(tasks: &mut Vec<Task>) {
             }
             //if due date is today use red text
             if task.due == Local::now().format("%Y-%m-%d").to_string() {
-                println!("{}| {} | {}", id, task.due, task.description);
+                println!("{}| {} | {}", id.green(), task.due.clone().red(), task.description.clone().red());
             }
             else if i % 2 == 0 {
-                println!("{}| {} | {}", id, task.due, task.description);
+                println!("{}| {} | {}", id.green(), task.due, task.description);
             } 
             else {
-                println!("{}| {} | {}", id, task.due, task.description);
+                println!("{}| {} | {}", id.green(), task.due, task.description);
             }
             i += 1;
         }
@@ -911,6 +922,36 @@ fn ui(frame: &mut Frame, tasks: &mut Vec<Task>, events: &mut Vec<Event1>) {
         .highlight_style(Style::default().add_modifier(Modifier::BOLD))
         .highlight_symbol(">>");
     frame.render_stateful_widget(table, taskevents_layout[2], &mut table_state);
-    
+}
 
+fn news() {
+    //formatted string with https://www.google.com/search?client=firefox-b-1-d&q= and arg1
+    let search = format!("https://news.ycombinator.com/");
+    let response = reqwest::blocking::get(
+        search,
+    )
+    .unwrap()
+    .text()
+    .unwrap();
+
+    let document = scraper::Html::parse_document(&response);
+    
+    //pick the <a> elements that have href and print them
+    let selector = scraper::Selector::parse("a").unwrap();
+    for element in document.select(&selector) {
+        let href = element.value().attr("href").unwrap_or("");
+        //get text of the element
+        let text = element.text().collect::<Vec<_>>();
+        let text = text.join(" ");
+        //if href is not empty and starts with http print it
+        if text == "API" {
+            break;
+        }
+        if text != "" && href != "" && href != " " && href.contains("http") {
+            println!("");
+            println!("{}",text.green());
+            println!("{}",href.blue());
+        }
+
+    }
 }
