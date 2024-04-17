@@ -34,11 +34,19 @@ where id is the listed id of the task viewable through `vayu list`
 ### grab the latest in tech from y-combinator's hacker news
 `vayu news`
 
+### add an event
+`vayu eadd "ece110 lab" 12:00pm 2:50pm 2024-04-25`
+
+### view event ids
+`vayu elist`
+
+### remove event by id
+`vayu erem id`
+
 # Deprecated Features
 The following tools have better alternatives on the market currently and have hence are in a legacy state.
 * Event Planner
 * Main Dashboard
-* 
 
 # Contributions
 vayu wouldn't be possible without several great rust crates. For a full list of dependencies please checkout the `Cargo.toml` file. 
