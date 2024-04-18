@@ -12,6 +12,13 @@ The best way to install vayu is via cargo which comes with an installation of ru
 Then in Windows PowerShell or the approriate Terminal for your OS type in:
 `cargo install vayu`
 
+Additionally Ollama must be installed for LLM based commands at https://ollama.com/.
+
+Then in terminal type in:
+`ollama run phi`
+
+You can then exit the terminal once the model has been intalled.
+
 To check if vayu has been installed properly open a new terminal window and type:
 `vayu list`
 
@@ -23,6 +30,9 @@ If there is an empty list then congratulations the installation was successful! 
 
 ### to add a task with natural language:
 `vayu auto "task description (some description of date)"`
+
+### to ask questions using the integrated LLM.
+`vayu ask "question string"`
 
 ### to mark tasks as done:
 `vayu done id`

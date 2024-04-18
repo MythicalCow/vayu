@@ -1,10 +1,12 @@
 short term goals
 - DONE - agenda and event system
 - add command support within ui
+- implement pdf and txt summarization system
 
 medium term goals
 - DONE - better ui
 - add music to pomodoro system
 
 long term goals
-- natural language processing for task scheduling
+- DONE - natural language processing for task scheduling
+- DONE - adding llm support

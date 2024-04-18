@@ -20,11 +20,17 @@ use chrono::{Local,Duration};
 //use std::io::prelude::*;
 //use chrono::Datelike;
 use indicatif::ProgressBar;
-//LLM
-use llm::Model;
 
 
 
+use ollama_rs::{
+    generation::completion::{
+        request::GenerationRequest, GenerationContext, GenerationResponseStream,
+    },
+    Ollama,
+};
+use tokio_stream::StreamExt;
+use tokio::io::{stdout as tokiostdout, AsyncWriteExt};
 
 //rewrite for CLI parser using subcommand feature
 //add, list, done, pomo, eadd, elist, eids, erem
@@ -34,6 +40,10 @@ enum SubComm {
     },
     Add{
         /// task description and due date (YYYY-MM-DD or today,yesterday,monday,etc.) separated by a colon. Ex: "vayu add yoga due:today"
+        arg1: String,
+    },
+    Ask{
+        /// question to ask to phi llm. Ex: vayu ask "what is the goal of rust"
         arg1: String,
     },
     Auto{
@@ -109,63 +119,17 @@ struct Event1 {
     id: i32,
 }
 
-fn main() {
-    //TASK LIST PARSING FROM LOCAL FILE
-    //try opening task list file
-    let file = File::open("tasks.txt");
-    //if the file doesn't exist, create it
-    if file.is_err() {
-        File::create("tasks.txt").expect("Unable to create file");
-    }
 
-    let file2 = File::open("events.txt");
-    //if the file doesn't exist, create it
-    if file2.is_err() {
-        File::create("events.txt").expect("Unable to create file");
-    }
 
-    //LLM
-    let llama = llm::load::<llm::models::Llama>(
-        // path to GGML file
-        std::path::Path::new("C:/Users/ragha/Downloads/open_llama_3b-f16.bin"),
-        // llm::ModelParameters
-        Default::default(),
-        // load progress callback
-        llm::load_progress_callback_stdout
-    )
-    .unwrap_or_else(|err| panic!("Failed to load model: {err}"));
 
-    //inference
-    let mut session = llama.start_session(Default::default());
-    let res = session.infer::<std::convert::Infallible>(
-        // model to use for text generation
-        &llama,
-        // randomness provider
-        &mut rand::thread_rng(),
-        // the prompt to use for text generation, as well as other
-        // inference parameters
-        &llm::InferenceRequest {
-            prompt: "explain rust in 3 sentences:",
-            ..Default::default()
-        },
-        // llm::OutputRequest
-        &mut Default::default(),
-        // output callback
-        |t| {
-            print!("{t}");
-            std::io::stdout().flush().unwrap();
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let ollama = Ollama::default();
 
-            Ok(())
-        }
-    );
+    let mut tkstdout = tokiostdout();
 
-    match res {
-        Ok(result) => println!("\n\nInference stats:\n{result}"),
-        Err(err) => println!("\n{err}"),
-    }
+    let mut _context: Option<GenerationContext> = None;
     
-
-
     let mut next_id = 0;
 
     //reads the task list data into a vector of tasks. (this is used by task list and for updating the file after adding a task)
@@ -232,6 +196,57 @@ fn main() {
             match submatches {
                 SubComm::Add{arg1} => {
                     add_task(&mut tasks, next_id, arg1);
+                },
+                _ => {
+                    println!("invalid usage of add. use --help to see usage");
+                }
+            }
+        },
+        "ask" => {
+            let submatches = SubComm::parse();
+            match submatches {
+                SubComm::Ask{arg1} => {
+                    //stdout.write_all(b"\n> ").await?;
+                    //stdout.flush().await?;
+
+                    let input = arg1.to_string();
+                    // std::io::stdin().read_line(&mut input)?;
+
+                    let input = input.trim_end();
+                    if input.eq_ignore_ascii_case("exit") {
+                        return Ok(())
+                    }
+
+                    let mut request = GenerationRequest::new("phi".into(), input.to_string());
+                    if let Some(context) = _context.clone() {
+                        request = request.context(context);
+                    }
+                    let mut stream: GenerationResponseStream = ollama.generate_stream(request).await?;
+
+                    while let Some(Ok(res)) = stream.next().await {
+                        for ele in res {
+                            tkstdout.write_all(ele.response.as_bytes()).await?;
+                            tkstdout.flush().await?;
+
+                            if let Some(final_data) = ele.final_data {
+                                _context = Some(final_data.context);
+                            }
+                        }
+                    }
+
+                    //TASK LIST PARSING FROM LOCAL FILE
+                    //try opening task list file
+                    let file = File::open("tasks.txt");
+                    //if the file doesn't exist, create it
+                    if file.is_err() {
+                        File::create("tasks.txt").expect("Unable to create file");
+                    }
+
+                    let file2 = File::open("events.txt");
+                    //if the file doesn't exist, create it
+                    if file2.is_err() {
+                        File::create("events.txt").expect("Unable to create file");
+                    }
                 },
                 _ => {
                     println!("invalid usage of add. use --help to see usage");
@@ -362,7 +377,9 @@ fn main() {
         file.write_all(event_str.as_bytes()).expect("Unable to write data");
     }
 
+    Ok(())
 }
+
 
 fn list_tasks(tasks: &mut Vec<Task>) {
     //sort the tasks by due date and store in dtasks
