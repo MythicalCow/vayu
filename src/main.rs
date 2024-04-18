@@ -127,7 +127,7 @@ fn main() {
     //LLM
     let llama = llm::load::<llm::models::Llama>(
         // path to GGML file
-        std::path::Path::new("C:/Users/ragha/Downloads/quantllama.bin"),
+        std::path::Path::new("C:/Users/ragha/Downloads/open_llama_3b-f16.bin"),
         // llm::ModelParameters
         Default::default(),
         // load progress callback
@@ -145,69 +145,7 @@ fn main() {
         // the prompt to use for text generation, as well as other
         // inference parameters
         &llm::InferenceRequest {
-            prompt: "Summarize the following document into 10 lines: [[Research]]
-            ## EU Project EXTEND
-            * [https://extend-project.eu/]
-            * EXTEND aims at developing the novel concept of Bidirectional Hyper-Connected Neural Systems to extend the capabilities of neural interfaces with minimally invasive communication links between multiple nerves in the body and multiple external devices. 
-            * Cycle 1:
-                * Connection to computer larger device
-                * **Research paper:** A thin, film multichannel electrode for muscle recording and stimulation in neuroprosthetics applications.
-                1. Ultrasound localization for proper placement of electrodes
-                2. Insertion of the electrodes using needs
-                3. Removal of needle and then cannula.
-                4. EMG Visualization 
-            * Cycle 2 (Miniaturization and wireless functionality)
-                * Needle has to go parallel to muscle fibers which is painful for the patient.
-                * **Research paper:** Finding EMG sensors and stimulators wirelessly powered and operated by volume conduction for networked neuroprosthetics.            * Cycle 3 (Embedding the device)
-                * Unpublished work.
-                * 1mm tube diameter design with electronics inside the tube.
-                * Insertion of electrodes via implantation.
-            * Surface Stimulation vs Insertion Method
-                * Surface stimulation stimulates other fibers which is why muscle implantation might be better although surface stimulation seems to work reasonably well. Implants also avoids having to replace electrodes frequently.
-            ## Peripheral electrical stimulation modulation of spinal and supraspinal pathways
-            * Motivation
-                * Parkinson's Disease
-                    * Symptoms Appear
-                        * Essential Tremor (ET)
-                    * First Line Treatment: Medication
-                        * Has side effects
-                    * Second-Line Treatment
-                        * Ablative surgery 
-                        * deep brain stimulation
-                        * Also has side effects
-                    * Peripheral electrical stimulation
-                        * Cheaper and has no known side effect
-            * Extensor stimulation causes stimulation of flexor (reciprocal inhibition)
-                * alpha motoneurons
-            * Disynaptic group I inhibition
-            * Selective and Adaptive Timely Stimulation (SATS)
-                * Recording Window
-                * Stimulation Window
-                * Alternation of:
-                    * EMG flexor carpi radials (FCR) stimulation
-                    * EMG Extensor carpi radials (ECR) stimulation
-            * Assessment of inhibition
-                * H-reflex
-                * M-wave
-                * These will have different amplitudes
-            * H-reflex conditioning-test paradigm
-                * Trying to bring the amplitude of H-reflex closer to the M-wave
-            * Modulation of on-going EMG
-                * Reduces  amplitude of EMG
-            * Somatosensory evoked potentials
-                * Different timing and magnitudes of the spikes and different locations across the nervous system.
-            * Results
-                * Reduction of tremor after the stimulation
-                * In-phase stimulation -> increased inhibition
-                * Out-of-phase stimulation -> Decreased inhibition
-                * Spinal Changes
-            ## Bonus Track: Electromyography-based control of exoskeletons
-            ![[concept-1.jpg]]
-            ## Summary
-            * Peripheral electrical stimulation has been explored as an alternative to reduce the pathological tremor and essential tremor  of Parkinson's disease with absence of known adverse affects
-            * Group is leading a clinical trial to test the use of PES as a therapeutic method with prolonged effects in terms of tremor reduction
-            * Electronic devices that allow EMG recording and stimulation of muscle fibers should be miniaturized using current microelectronic technologies enabling fully implantable networked neuroprosthetics.
-            * These devices can on the other hand be used to control prostheses and exoskeletons in a more intuitive way.",
+            prompt: "explain rust in 3 sentences:",
             ..Default::default()
         },
         // llm::OutputRequest
