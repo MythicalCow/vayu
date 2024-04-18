@@ -132,6 +132,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     let mut next_id = 0;
 
+    let file = File::open("tasks.txt");
+    //if the file doesn't exist, create it
+    if file.is_err() {
+        File::create("tasks.txt").expect("Unable to create file");
+    }
+
+    let file2 = File::open("events.txt");
+    //if the file doesn't exist, create it
+    if file2.is_err() {
+        File::create("events.txt").expect("Unable to create file");
+    }
+
+
     //reads the task list data into a vector of tasks. (this is used by task list and for updating the file after adding a task)
     let mut tasks : Vec<Task> = Vec::new();
     if let Ok(lines) = read_lines("tasks.txt") {
