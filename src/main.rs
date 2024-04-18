@@ -22,7 +22,7 @@ use chrono::{Local,Duration};
 use indicatif::ProgressBar;
 
 
-
+//llm
 use ollama_rs::{
     generation::completion::{
         request::GenerationRequest, GenerationContext, GenerationResponseStream,
@@ -31,6 +31,11 @@ use ollama_rs::{
 };
 use tokio_stream::StreamExt;
 use tokio::io::{stdout as tokiostdout, AsyncWriteExt};
+
+//summarizer dependencies
+use std::fs as fs;
+
+
 
 //rewrite for CLI parser using subcommand feature
 //add, list, done, pomo, eadd, elist, eids, erem
@@ -44,6 +49,10 @@ enum SubComm {
     },
     Ask{
         /// question to ask to phi llm. Ex: vayu ask "what is the goal of rust"
+        arg1: String,
+    },
+    Summary{
+        /// text to summarize. Ex: vayu summarize "path/to/file.txt" or "path/to/file.pdf"
         arg1: String,
     },
     Auto{
@@ -215,6 +224,50 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         },
+        "summary" =>{
+            let submatches = SubComm::parse();
+            match submatches {
+                SubComm::Summary{arg1} => {
+                    if !arg1.ends_with(".txt"){
+                        println!("invalid file type. use .txt or .pdf files");
+                    }
+                    else{
+                        //read the file
+                        let contents = fs::read_to_string(arg1).expect("error reading file");
+                        //pass to the ollama llm as input and ask to summarize
+                        let prompt = format!("summarize the following text in less than three sentences: {}", contents);
+                        println!("Summarizer Initialized....");
+                        let ollama = Ollama::default();
+                
+                        let mut tkstdout = tokiostdout();
+                
+                        let mut _context: Option<GenerationContext> = None;
+                
+                        let mut request = GenerationRequest::new("phi".into(), prompt);
+                        if let Some(context) = _context.clone() {
+                            request = request.context(context);
+                        }
+                        println!("Generating Summary...");
+                        let mut stream: GenerationResponseStream = ollama.generate_stream(request).await?;
+                
+                        while let Some(Ok(res)) = stream.next().await {
+                            for ele in res {
+                                tkstdout.write_all(ele.response.as_bytes()).await?;
+                                tkstdout.flush().await?;
+                
+                                if let Some(final_data) = ele.final_data {
+                                    _context = Some(final_data.context);
+                                }
+                            }
+                        }
+                         
+                    }
+                },
+                _ => {
+                    println!("invalid usage of summary. use --help to see usage");
+                }
+            }
+        }
         "ask" => {
             let submatches = SubComm::parse();
             match submatches {
@@ -247,22 +300,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                     }
 
-                    //TASK LIST PARSING FROM LOCAL FILE
-                    //try opening task list file
-                    let file = File::open("tasks.txt");
-                    //if the file doesn't exist, create it
-                    if file.is_err() {
-                        File::create("tasks.txt").expect("Unable to create file");
-                    }
-
-                    let file2 = File::open("events.txt");
-                    //if the file doesn't exist, create it
-                    if file2.is_err() {
-                        File::create("events.txt").expect("Unable to create file");
-                    }
+                    
                 },
                 _ => {
-                    println!("invalid usage of add. use --help to see usage");
+                    println!("invalid usage of ask. use --help to see usage");
                 }
             }
         },
