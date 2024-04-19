@@ -1,6 +1,6 @@
 [package]
 name = "vayu"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 authors = ["Raghav Tirumale raghav.tirumale@gmail.com"]
 license = "MIT"

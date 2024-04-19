@@ -235,7 +235,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         //read the file
                         let contents = fs::read_to_string(arg1).expect("error reading file");
                         //pass to the ollama llm as input and ask to summarize
-                        let prompt = format!("summarize the following text in less than three sentences: {}", contents);
+                        let prompt = format!("summarize the following text in less than three sentences: {} don't provide any hypthetical scenarios afterwards.", contents);
                         println!("Summarizer Initialized....");
                         let ollama = Ollama::default();
                 
