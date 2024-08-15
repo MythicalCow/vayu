@@ -32,7 +32,6 @@ rand = "0.8.5"
 ratatui = "0.25.0"
 scraper = "0.19.0"
 reqwest = { version = "0.12.1", features = ["blocking"] }
-pdf-extract = "0.7.5"
 
 
 

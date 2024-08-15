@@ -243,7 +243,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 
                         let mut _context: Option<GenerationContext> = None;
                 
-                        let mut request = GenerationRequest::new("phi".into(), prompt);
+                        let mut request = GenerationRequest::new("gemma2:2b".into(), prompt);
                         if let Some(context) = _context.clone() {
                             request = request.context(context);
                         }
@@ -272,18 +272,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let submatches = SubComm::parse();
             match submatches {
                 SubComm::Ask{arg1} => {
-                    //stdout.write_all(b"\n> ").await?;
-                    //stdout.flush().await?;
-
                     let input = arg1.to_string();
-                    // std::io::stdin().read_line(&mut input)?;
-
                     let input = input.trim_end();
+                    let sys_prompt = "If the user asks about anything task related use the following list of tasks as context: ";
+                    //combine all tasks into a context string
+                    let mut context = "".to_string();
+                    for task in &tasks {
+                        context.push_str(&task.description);
+                        context.push_str(", Deadline: ");
+                        context.push_str(&task.due);
+                    }
+                    //add system_prompt and context to input. which is of type &str
+                    let input = format!("{} {} {}. Now respond to this question briefly: ", sys_prompt, context, input);
+
                     if input.eq_ignore_ascii_case("exit") {
                         return Ok(())
                     }
 
-                    let mut request = GenerationRequest::new("phi".into(), input.to_string());
+                    let mut request = GenerationRequest::new("gemma2:2b".into(), input.to_string());
                     if let Some(context) = _context.clone() {
                         request = request.context(context);
                     }
@@ -419,7 +425,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     //write the task list to the file
     let mut file = File::create("tasks.txt").expect("Unable to create file");
-    for task in tasks {
+    for task in &tasks {
         let task_str = format!("{}%{}%{}%{}\n", task.description, task.due, task.done, task.id);
         file.write_all(task_str.as_bytes()).expect("Unable to write data");
     }
