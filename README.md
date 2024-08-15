@@ -15,7 +15,7 @@ Then in Windows PowerShell or the approriate Terminal for your OS type in:
 Additionally Ollama must be installed for LLM based commands at https://ollama.com/.
 
 Then in terminal type in:
-`ollama run phi`
+`ollama run gemma2:2b`
 
 You can then exit the terminal once the model has been intalled.
 
@@ -31,7 +31,7 @@ If there is an empty list then congratulations the installation was successful! 
 ### to add a task with natural language:
 `vayu auto "task description (some description of date)"`
 
-### to ask questions using the integrated LLM.
+### to ask general or task specific questions to the integrated LLM
 `vayu ask "question string"`
 
 ### to mark tasks as done:
